@@ -1,0 +1,117 @@
+---
+title: "STAT 361, Asg 1"
+name: "Yun Kyaw"
+output: pdf_document
+date: "2022-09-28"
+---
+
+# Question 3
+
+*a) Draw the scatter plot of PRESS versus TEMP. Fit the simple regression model for PRESS on TEMP. Plot the residuals versus the fitted values. What are your observations?*
+
+```{r}
+library(readr)
+library(ggplot2)
+Forbes <- read_csv("/Users/yunkyaw/Desktop/STAT/Forbes.csv")
+```
+
+``` {r, fig.margin = TRUE}
+ggplot(Forbes, aes(TEMP, PRESS)) + 
+  geom_point() +
+  labs(x = "Temperature (Fahrenheit)", y = "Pressure", title = "Pressure VS Temperature")
+```
+
+```{r}
+fit = lm(formula = PRESS ~ TEMP, data = Forbes)
+summary(fit)
+```
+
+```{r, fig.margin = TRUE}
+ggplot(fit, aes(fit$fitted.values, fit$residuals)) +
+  geom_point() +
+  labs(x = "Fitted Values", y = "Residuals", title = "Residuals VS Fitted Values")
+```
+
+The scatterplot of Pressure VS Temperature shows a seemingly positive linear relationship amongst the two - as temperature increases, so does the pressure. The residuals show that there is an outlier, and that there is an underlying quadratic-like curve in the values.
+
+*b) Draw the scatter plot of 100xlog(PRESS) versus TEMP, where log() represents the logarithm with the base 10.*
+
+```{r, fig.margin = TRUE}
+ggplot(Forbes, aes(TEMP, 100*log(PRESS))) + 
+  geom_point() +
+  labs(x = "Temperature (Fahrenheit)", title = "100*log(PRESS) VS Temperature")
+```
+
+*c) Fit the simple regression model for 100xlog(PRESS) on TEMP. Compute the estimates of parameters. Write down the fitted line. Write down the analysis of variance table. Compute R2. Draw the fitted line onto the scatter plot in (b)*
+
+```{r, fig.margin = TRUE}
+log_fit = lm(formula = 100*log(PRESS) ~ TEMP, data = Forbes)
+ggplot(log_fit, aes(log_fit$fitted.values, log_fit$residuals)) +
+  geom_point() +
+  labs(x = "Fitted Values", y = "Residuals", title = "Residuals VS Fitted Values")
+```
+
+```{r}
+summary(log_fit)
+```
+
+From looking at the Estimates of the Coefficients, we can observe that $\hat{\beta_{0}}$ is -97.08647, and $\hat{\beta_{1}}$ is 2.06224. Thus, the fitted line is $\hat{Y}$ = -97.08647 + 2.06224$X$.
+
+```{r}
+anova(log_fit)
+```
+
+$R^2$ = $SS(Regr) / SS(Total_{corr})$ = $2257.32 / (2257.32 + 11.43)$ =
+```{r, echo = FALSE}
+2257.32 / (2257.32 + 11.43)
+```
+
+Both the linear regression and calculating the $R^2$ value from the ANOVA find the $R^2$ value to be 0.995.
+
+The following graph shows the graph from 3b with a fitted line.
+
+```{r, fig.margin = TRUE}
+ggplot(Forbes, aes(TEMP, 100*log(PRESS))) + 
+  geom_point() +
+  labs(x = "Temperature (Fahrenheit)", title = "100*log(PRESS) VS Temperature") +
+  geom_abline(intercept = -97.08647, slope = 2.062236)
+```
+
+*d) Obtain 95% CI for* $\beta_{0}$ *and* $\beta_{1}$
+
+```{r, eval = FALSE}
+confint(fit, level = 0.95)
+```
+
+-111.6957479 $\ge$ $\beta_{0}$ $\ge$ -100.4164836 with 95% confidence, and 0.6161757 $\ge$ $\beta_{1}$ $\ge$ 0.6691235 with 95% confidence
+
+*e) Obtain 99% prediction intervals for 100xlog(PRESS) for prediction at 200*$^\circ$*F*
+
+```{r}
+x0 = data.frame(TEMP = seq(200, 205, by=0.5))
+est_predict = predict(log_fit, x0, se.fit = TRUE,interval ="prediction")
+upper_predict = est_predict$fit[1] + qt(0.995, 15) * summary(log_fit)$coef[4]
+lower_predict = est_predict$fit[1] - qt(0.995, 15) * summary(log_fit)$coef[4]
+```
+
+Thus, the 99% prediction interval for prediction at 200$^\circ$F is [315.249, 315.4723]
+
+*f) Obtain 99% CI for 100xlog(PRESS) for the fitted value at 200*$^\circ$*F*
+
+```{r}
+upper_CI = 200 + qt(0.995, 15) * summary(log_fit)$coef[4]
+lower_CI = 200 - qt(0.995, 15) * summary(log_fit)$coef[4]
+```
+
+Thus, the 99% confidence interval for fitted value at 200$^\circ$F is [199.8883, 200.1117]
+
+*g) Obtained the residual plot (residual versus the fitted values) and compare to that fit in (a). What is your conclusion?*
+
+```{r, fig.margin = TRUE}
+log_fit = lm(formula = 100*log(PRESS) ~ TEMP, data = Forbes)
+ggplot(log_fit, aes(log_fit$fitted.values, log_fit$residuals)) +
+  geom_point() +
+  labs(x = "Fitted Values", y = "Residuals", title = "Residuals VS Fitted Values for 100*log(PRESS)")
+```
+
+This residual plot shows a more linear relationship amongst the values than that of part a). This suggests that taking 100*log(PRESS) better fits the values to make them more accurate for a linear regression, and thus making assumptions about the linear relationship of temperature and pressure.
