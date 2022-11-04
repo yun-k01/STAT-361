@@ -1,0 +1,50 @@
+---
+title: "STAT 361, Asg 2"
+name: "Yun Kyaw"
+output: pdf_document
+date: "2022-10-26"
+---
+
+# Question 3
+
+```{r}
+flow = read.table("flow.txt", header = TRUE)
+```
+
+*a) Use Y = ln(*$Q_o$ = $Q_p$*) as the dependent variable. The dependent variable will have the value zero if the observed and predicted peak flows agree. Set up the regression problem to determine whether the discrepancy Y is related to any of the four independent variables. Use an intercept in the model. Provide the fitted values.*
+
+```{r}
+# creating Y = ln(Qo / Qp) as a new column
+flow$Y = log(flow$Qo/flow$Qp, exp(1))
+attach(flow)
+```
+
+```{r}
+fit = lm(Y ~ X1 + X2 + X3 + X4)
+summary(fit)
+```
+
+```{r}
+fit$fitted.values
+```
+
+*b) Further consideration of the problem suggested that the discrepancy between observed and predicted peak flow Y might go to zero as the values of the four independent variables approach zero. Redefine the regression problem to eliminate the intercept (force* $\beta_0$ *= 0), and Provide the fitted values.*
+
+```{r}
+fit1 = lm(Y ~ X1 + X2 + X3 + X4 -1)
+summary(fit1)
+```
+
+```{r}
+fit1$fitted.values
+```
+
+*c) Return the regression (without intercept) using only X1 and X4. Do the regression coefficients for X1 and X4 change? Explain why they do or do not change.*
+
+```{r}
+fit2 = lm(Y ~ X1 + X4 -1)
+summary(fit2)
+```
+The regression coefficients for X1 and X4 change. This is likely due to the coefficients being jointly estimated as each coefficient is influenced by other variables in the model. Thus, when removing X2 and X3, it affects coefficients for X1 and X4.
+
+*d) Describe the change in the standard errors of the estimated regression coefficients as the intercept was dropped (part (a) versus part(b)) and as X2 and X3 were dropped from the model (part (b) versus part(c)).* The standard errors change in part a and part b as the standard error decreases in all four precitors (particularly X1) when the model does not include the intercept. Comparing parts b and c, in the model of just X1 and X4, we can see that standard error increases in X1 , while the standard error decreases in X4.
