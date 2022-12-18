@@ -1,0 +1,267 @@
+---
+title: "STAT 361, Asg 3, Q1"
+output: pdf_document
+date: "2022-11-10"
+---
+
+*To provide clients with quantitative information upon which to make rental decisions, a commercial real estate company evaluate vacancy rates, square footage, rental rates, and operating expenses for commercial properties in a large metropolitan are. See the data file CommercialProperties.txt. It lists the 81 suburban commercial properties with the variables the age X1, operating expense and taxes X2, vacancy rates X3, total square footage X4 and the rental rates Y . Complete the following questions.*
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(gridExtra)
+
+setwd("~/Desktop/STAT")
+properties = read.table("CommercialProperties.txt", header = TRUE)
+attach(properties)
+```
+
+*a) Draw a scatter plot Y versus each independent variable. What is your observation?*
+```{r}
+plot1 = ggplot(properties, aes(x = X1, y = Y)) +
+  geom_point() +
+  labs(title = "Y vs X1")
+plot2 = ggplot(properties, aes(x = X2, y = Y)) +
+  geom_point() +
+  labs(title = "Y vs X2")
+plot3 = ggplot(properties, aes(x = X3, y = Y)) +
+  geom_point() +
+  labs(title = "Y vs X3")
+plot4 = ggplot(properties, aes(x = X4, y = Y)) +
+  geom_point() +
+  labs(title = "Y vs X4")
+grid.arrange(plot1, plot2, plot3, plot4)
+```
+We can observe that in X1, the points are discrete, and there is no obvious relationship among the points. X2 and X4 have a more positive linear relationship than X1 and X3. And X3 also does not have an obvious relationship among its points, but the majority of its lie on 0 and are less than 0.1.
+
+*b) Fit the following models.*
+Model 1: $Y_i = \beta_0 + \epsilon_i$ 
+Model 2: $Y_i = \beta_0 + \beta_1X_{i1} + \epsilon_i$ 
+Model 3: $Y_i = \beta_0 + \beta_1X_{i1} + 2\beta_2X_{i2} + \epsilon_i$ 
+Model 4: $Y_i = \beta_0 + \beta_1X_{i1} + 2\beta_2X_{i2} + 3\beta_3X_{i3} + \epsilon_i$ 
+Model 5: $Y_i = \beta_0 + \beta_1X_{i1} + 2\beta_2X_{i2} + 3\beta_3X_{i3} + 4\beta_4X_{i4} + \epsilon_i$ 
+*Compare the multiple correlation coefficient R2 of the above five models.*
+
+```{r}
+myfit1 = lm(Y~1)
+summary(myfit1)
+```
+
+```{r}
+myfit2 = lm(Y~X1)
+summary(myfit2)
+```
+
+```{r}
+myfit3 = lm(Y~X1+X2)
+summary(myfit3)
+```
+
+```{r}
+myfit4 = lm(Y~X1+X2+X3)
+summary(myfit4)
+```
+
+```{r}
+myfit5 = lm(Y~X1+X2+X3+X4)
+summary(myfit5)
+```
+
+Model 1 does not have an R2 value as it does not include the observed data (considering it only includes the intercept and random error). Model 2 has an R2 value of 0.06264, Model 3 has an R2 value of 0.3704, Model 4 has an R2 value of 0.4058, and Model 5 has an R2 value of 0.5847. Thus, we observe that the more predictors that are added, the larger the R2 value, and thus the higher the relationship of the linear model and the dependent variables.
+
+*c) Perform an overall F test for Model 5 at level* $\alpha$ *= 0:05. Specify the null and alternative hypothesis. State the conclusion.*
+
+H_o: $\beta_1 = \beta_2 = \beta_3 = \beta_4 = 0$, and H_a: one of $\beta_j$ $\not=$ 0, where j = 1, 2, 3, 4
+
+```{r}
+n = nrow(properties)
+p = ncol(properties)-1
+
+X = matrix(0,n,p+1)
+X[,1] = rep(1,n)
+for(j in 1:p)
+  X[,j+1] = properties[,j+1]
+
+betahat = solve(t(X)%*%X)%*%t(X)%*%Y
+yhat = X%*%betahat
+epsilonhat = Y-yhat
+ssres = t(epsilonhat)%*%epsilonhat
+sstotal = sum((Y-mean(Y))^2)
+ssreg = sum((yhat-mean(Y))^2)
+Fcomputed = (ssreg/p)/(ssres/(n-(p+1)))
+Fcomputed
+```
+
+This F statistic is 26.756. Thus, F > $F_{1-0.05, 4, 76}$ $\approx$ 2.5, and we reject the null hypothesis that all the predictors are 0.
+
+*d) Can X_2 be dropped from Model 5? Give the explanation.*
+
+```{r}
+summary(lm(Y~X1+X3+X4))
+```
+```{r}
+summary(lm(Y~X1+X2+X3+X4))
+```
+
+X_2 should not be dropped from Model 5 because it is statistically significant. Additionally, from comparing the linear model of including and excluding X_2, we can observe that including X_2 increases the R2 value and the F-statistic, thus suggesting the predictor strengthens the relationship of the linear model.
+
+*e) Test H0 :* $\beta_1 = \beta_2$ *= 0 in Model 5 at the 5% significance level. State the conclusion. Report p-value.*
+
+```{r}
+anova(lm(Y~X1),lm(Y~X1+X2))
+```
+
+We can reject the null hypothesis as the P-value is statistically significant, and is 2.787\*10\^-8. Thus, we know that at least one of $\beta_1$ = $\beta_2$ is not equal to 0.
+
+*f) Obtain 95% confidence interval for each* $\beta_j$ *for j = 0, 1, 2, 3, 4.*
+
+```{r}
+sigmasquarehat = ssres/(n-(p+1))
+txxinv = solve(t(X)%*%X)
+t = qt(0.975,n-(p+1))
+```
+
+The confidence interval for $\beta_0$ is
+
+```{r echo = FALSE}
+c(betahat[1]-t*sqrt(sigmasquarehat*txxinv[1,1]),
+  betahat[1]+t*sqrt(sigmasquarehat*txxinv[1,1]))
+```
+
+The confidence interval for $\beta_1$ is
+
+```{r echo = FALSE}
+c(betahat[2]-t*sqrt(sigmasquarehat*txxinv[2,2]),
+  betahat[2]+t*sqrt(sigmasquarehat*txxinv[2,2]))
+```
+
+The confidence interval for $\beta_2$ is
+
+```{r echo = FALSE}
+c(betahat[3]-t*sqrt(sigmasquarehat*txxinv[3,3]),
+  betahat[3]+t*sqrt(sigmasquarehat*txxinv[3,3]))
+```
+
+The confidence interval for $\beta_3$ is
+
+```{r echo = FALSE}
+c(betahat[4]-t*sqrt(sigmasquarehat*txxinv[4,4]),
+  betahat[4]+t*sqrt(sigmasquarehat*txxinv[4,4]))
+```
+
+The confidence interval for $\beta_4$ is
+
+```{r echo = FALSE}
+c(betahat[5]-t*sqrt(sigmasquarehat*txxinv[5,5]),
+  betahat[5]+t*sqrt(sigmasquarehat*txxinv[5,5]))
+```
+
+*g) Obtain 95% confidence interval for* $\beta$ = $(\beta_0, \beta_1, \beta_2 \beta_3, \beta_4)^T$ *using the Bonferroni method and the Scheffe method. Draw the conclusions about which regression coefficient are clearly different from zero.*
+
+###### The Bonferroni method:
+
+```{r}
+t = qt(1-0.025/(p+1),n-(p+1))
+```
+
+The confidence interval for $\beta_0$ is
+
+```{r echo = FALSE}
+c(betahat[1]-t*sqrt(sigmasquarehat*txxinv[1,1]),
+  betahat[1]+t*sqrt(sigmasquarehat*txxinv[1,1]))
+```
+
+The confidence interval for $\beta_1$ is
+
+```{r echo = FALSE}
+c(betahat[2]-t*sqrt(sigmasquarehat*txxinv[2,2]),
+  betahat[2]+t*sqrt(sigmasquarehat*txxinv[2,2]))
+```
+
+The confidence interval for $\beta_2$ is
+
+```{r echo = FALSE}
+c(betahat[3]-t*sqrt(sigmasquarehat*txxinv[3,3]),
+  betahat[3]+t*sqrt(sigmasquarehat*txxinv[3,3]))
+```
+
+The confidence interval for $\beta_3$ is
+
+```{r echo = FALSE}
+c(betahat[4]-t*sqrt(sigmasquarehat*txxinv[4,4]),
+  betahat[4]+t*sqrt(sigmasquarehat*txxinv[4,4]))
+```
+
+The confidence interval for $\beta_4$ is
+
+```{r echo = FALSE}
+c(betahat[5]-t*sqrt(sigmasquarehat*txxinv[5,5]),
+  betahat[5]+t*sqrt(sigmasquarehat*txxinv[5,5]))
+```
+
+###### The Scheffe Method:
+
+```{r}
+sf = sqrt((p+1)*qf(1-0.05,p+1,n-(p+1)))
+```
+
+The confidence interval for $\beta_0$ is
+
+```{r echo = FALSE}
+c(betahat[1]-sf*sqrt(sigmasquarehat*txxinv[1,1]),
+  betahat[1]+sf*sqrt(sigmasquarehat*txxinv[1,1]))
+```
+
+The confidence interval for $\beta_1$ is
+
+```{r echo = FALSE}
+c(betahat[2]-sf*sqrt(sigmasquarehat*txxinv[2,2]),
+  betahat[2]+sf*sqrt(sigmasquarehat*txxinv[2,2]))
+```
+
+The confidence interval for $\beta_2$ is
+
+```{r echo = FALSE}
+c(betahat[3]-sf*sqrt(sigmasquarehat*txxinv[3,3]),
+  betahat[3]+sf*sqrt(sigmasquarehat*txxinv[3,3]))
+```
+
+The confidence interval for $\beta_3$ is
+
+```{r echo = FALSE}
+c(betahat[4]-sf*sqrt(sigmasquarehat*txxinv[4,4]),
+  betahat[4]+sf*sqrt(sigmasquarehat*txxinv[4,4]))
+```
+
+The confidence interval for $\beta_4$ is
+
+```{r echo = FALSE}
+c(betahat[5]-sf*sqrt(sigmasquarehat*txxinv[5,5]),
+  betahat[5]+sf*sqrt(sigmasquarehat*txxinv[5,5]))
+```
+
+Comparing the two, we can find that overall, the Bonferonni method provides a narrower/better confidence interval than the Scheffe method. $\beta_0$ is clearly different from 0, and the rest of the $\beta$ are relatively close to 0, particularly $\beta_4$. $\beta_1$ and $\beta_2$ are relatively close to 0, while the confidence interval of $\beta_3$ contains 0. 
+
+*h) Obtain 95% confidence interval for the mean of Y at the new input* $X_1 = 11, X_2 = 8.97, X_3 = 0.07, X_4 = 60000.$
+
+```{r}
+x0 = data.frame(X1 = 11.00, X2 = 8.97, X3 = 0.07, X4 = 60000)
+est_new = predict(myfit5, x0, se.fit = TRUE, interval = "confidence")
+```
+
+The confidence interval at this input is:
+
+```{r echo = FALSE}
+est_new$fit
+```
+
+*i) Obtain 95% prediction interval for the future response* $Y^*$ *at the new input* $X_1 = 11, X_2 = 8.97, X_3 = 0.07, X_4 = 60000.$
+
+```{r}
+pred_new = predict(myfit5, x0, se.fit = TRUE, interval = "prediction")
+```
+
+The confidence interval at this input is:
+
+```{r echo = FALSE}
+pred_new$fit
+```

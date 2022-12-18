@@ -1,0 +1,45 @@
+---
+title: "STAT 361, Asg 4, Q1"
+output: pdf_document
+date: "2022-12-01"
+---
+## Assigning a visual volume score to vegetation is a nondestructive method of obtaining measures of biomass. The volume score is the volume of space occupied by the plant computed according to an extensive set of rules involving different geometric shapes. The accompanying data on volume scores and biomass dry weights for grasses were obtained for the purpose of developing a prediction equation for dry weight biomass based on the nondestructive volume score. See the file dryweight.txt. Use a polynomial response model to develop a prediction equation for Y = (dryweight)^(1/2)^ on X = ln(volume + 1). What degree polynomial do you need? what it make sense in this case to force the origin to be zero? Will your fit to the data still be satisfactory if you do?
+
+##### Creating the variables Y = (dryweight)^(1/2)^ and X = ln(volume + 1)
+```{r setup, include=FALSE}
+library(tidyverse)
+library(SciViews)
+
+setwd("~/Desktop/STAT")
+data1 = read.table("dryweight.txt", header = TRUE)
+```
+
+##### Using a polynomial response model to develop a prediction equation for Y and X
+``` {r}
+data1$Y = (data1$dryweight)^(1/2)
+data1$X = ln(data1$volume + 1)
+attach(data1)
+```
+
+```{r}
+fitqr = lm(data1$Y ~ X + I(X^2))
+summary(fitqr)
+
+fitcb = lm(data1$Y ~ X + I(X^2) + I(X^3))
+summary(fitcb)
+
+fitcb2 = update(fitcb,.~.-I(X^2))
+summary(fitcb2)
+```
+
+##### Performing stepwise selection to determine the best prediction equation
+``` {r}
+null = lm(Y~1, data = data1)
+full = fitcb
+sfit = step(null, scope = list(lower = null, upper = full), direction = 'both')
+```
+According to the stepwise selection, the best model includes a quadratic and cubic polynomial (I(X)^2^ and I(X)^3^).
+
+Considering X = ln(volume + 1), it does not make sense to force the origin to zero, as X has already stabilized the data by forcing the origin of volume to 0. If the origin is fit to zero, the data will no longer be satisfactory as it may overfit the data. Transforming the data again will affect the residuals, which thus reduces the strength of the linear regression's prediction.
+
+

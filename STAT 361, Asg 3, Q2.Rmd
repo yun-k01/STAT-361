@@ -1,0 +1,86 @@
+---
+title: "STAT 361, Asg 3, Q2"
+output: pdf_document
+date: "2022-11-10"
+---
+*Consider the demand.txt. The demand for a consumer product is affected by many factors. The possible factors are the relative urbanization (X1), education level (X2), and relative income (X3). The measurement for the demand of the product is the product usage (Y ). The data are based on nine geographic areas. Use all subsets regression method (based on R2 adj , AIC and Cp), the forward selection method, the backward elimination and the stepwise regression method to determine the "best" model, respectively.*
+
+```{r setup, include=FALSE}
+setwd("~/Desktop/STAT")
+library(tidyverse)
+library(leaps)
+library(faraway)
+demand = read.table("demand.txt")
+names(demand) = c("X1", "X2", "X3", "Y")
+attach(demand)
+```
+
+# R^2 Adjusted
+```{r}
+n = nrow(demand)
+p = ncol(demand)-1
+X = matrix(0,n,p+1)
+X[,1] = rep(1,n)
+for(j in 1:p)
+  X[,j+1]<-demand[,j]
+
+adjr2.leaps = leaps(X[,-1], Y, method='adjr2')
+plot(adjr2.leaps$size, adjr2.leaps$adjr2, pch=23, bg='blue', cex=2)
+
+best.model.adjr2 = adjr2.leaps$which[which((adjr2.leaps$adjr2 == max(adjr2.leaps$adjr2))),]
+print(best.model.adjr2)
+```
+From this method, we find that using predictors X2 and X3 produce the best model.
+
+# AIC
+```{r}
+r2.leaps = leaps(X[,-1], Y, method='r2')
+ss_total = sum((Y-mean(Y))^2)
+AIC.all = n*log((1-r2.leaps$r2)*ss_total)+2*(r2.leaps$size-1)-n*log(n)
+AIC.all
+r2.leaps$which
+```
+From this method, we find that using predictors X2 and X3 produce the best model.
+
+# C_p
+```{r}
+Cp.leaps = leaps(X[,-1], Y, method='Cp')
+plot(Cp.leaps$size, Cp.leaps$Cp, pch = 23, bg = 'blue', cex = 2)
+
+Cp.leaps2 = regsubsets(Y~., data = demand, nvmax = 5)
+summary.Cp = summary(Cp.leaps2)
+summary.Cp$cp
+
+plot(Cp.leaps2,scale="Cp")
+
+Cpplot(Cp.leaps)
+```
+From this method and graph, we find that using predictors X2 and X3 produce the best model.
+
+# Forward Selection
+```{r}
+null = lm(Y~1,data = demand)
+full = lm(Y~., data = demand)
+sfit_f = step(null, scope = list(lower = null, upper = full), direction = 'forward')
+```
+From performing foward selection, we find that using all three predictors produces the best model
+
+# Backward Elimination
+
+```{r}
+sfit_b = step(full, direction = 'backward')
+```
+From performing backward elimination, we find that using X2 and X3 produces the best model
+
+# Stepwise Regression
+```{r}
+sfit = step(null, scope = list(lower = null, upper = full), direction ='both')
+summary(sfit)
+sfit$anova
+```
+Performing stepwise regression, we find that X2 and X3 make the best model
+```{r}
+ffit = lm(Y~X2+X3, data = demand)
+summary(ffit)
+```
+Overall, all the methods but forward selection suggested that predictors X2 and X3 produce the best model.
